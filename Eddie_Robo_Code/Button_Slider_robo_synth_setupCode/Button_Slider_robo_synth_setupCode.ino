@@ -206,10 +206,28 @@ void loop() {
 #endif
     //impliment button logic below
 
-    if (rawButton5 == 1) {
-      MIDI.sendNoteOn(noteVals[1], 255, channel);
+    if (rawButton5 == 0) {
+      MIDI.sendPitchBend(8000,1);
     } else if (rawButton6 == 1) {
-      MIDI.sendNoteOff(noteVals[1], 0, channel);
+      MIDI.sendPitchBend(-8000,1);
+    }
+
+    if (rawButton6 == 0) {
+      MIDI.sendControlChange(1,127,1);
+    } else if (rawButton6 == 1) {
+      MIDI.sendControlChange(1,0,1);
+    }
+
+    if (rawButton7 == 0) {
+      MIDI.sendControlChange(71,127,1);
+    } else if (rawButton6 == 1) {
+      MIDI.sendControlChange(71,0,1);
+    }
+
+    if (rawButton8 == 0) {
+      MIDI.sendControlChange(74,127,1);
+    } else if (rawButton6 == 1) {
+      MIDI.sendControlChange(74,0,1);
     }
 
   }
