@@ -1,6 +1,6 @@
 //peter april
 // eddie may 1st
-// william may 2nd
+// william/peter may 2nd
 #include <MIDI.h>
 
 #include <FastLED.h>
@@ -59,6 +59,11 @@ bool rawButton5 = false;
 bool rawButton6 = false;
 bool rawButton7 = false;
 bool rawButton8 = false;
+
+bool circleButton1 = false;
+bool circleButton2 = false;
+bool circleButton3 = false;
+bool circleButton4 = false;
 
 //LED OUTPUTS
 #define LED_PIN1     24
@@ -182,6 +187,19 @@ void loop() {
     rawButton7 = digitalRead(button7);
     rawButton8 = digitalRead(button8);
 
+    if (rawButton1 == 0) {
+      circleButton1 = !circleButton1;
+    }
+    if (rawButton2 == 0) {
+      circleButton2 = !circleButton2;
+    }
+    if (rawButton3 == 0) {
+      circleButton3 = !circleButton3;
+    }
+    if (rawButton4 == 0) {
+      circleButton4 = !circleButton4;
+    }
+
 #ifdef DEBUG
     //    Debug Raw print statements
     Serial.print("RAW button 1: ");
@@ -200,6 +218,9 @@ void loop() {
     Serial.print(rawButton7);
     Serial.print("\t RAW button 8: ");
     Serial.println(rawButton8);
+
+    Serial.print("circle button 3: ");
+    Serial.println(circleButton3);
 #endif
     //impliment button logic below
 
@@ -215,7 +236,7 @@ void loop() {
       MIDI.sendControlChange(1, 0, 1);
     }
 
-    if (rawButton7 == 0) {
+    if (circleButton3 == 0 || rawButton7 == 0 ) {
       if (temp1 < 120) {
         temp1 = temp1 + 10;
       } else {
@@ -245,7 +266,7 @@ void loop() {
     for (int i = 0; i < NUM_LEDS; i++) {
       leds1[i] = CHSV(mappedSliderLED(rawSlider1, 428, 1018), 255, 255);
       leds2[i] = CHSV(mappedSliderLED(rawSlider2, 34, 599), 255, 255);
-      leds3[i] = CHSV(mappedSliderLED(rawSlider3, 420, 956), temp1*2, 255);
+      leds3[i] = CHSV(mappedSliderLED(rawSlider3, 420, 956), temp1 * 2, 255);
       leds4[i] = CHSV(mappedSliderLED(rawSlider4, 67, 615), 255, 255);
     }
     FastLED.show();
