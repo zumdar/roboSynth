@@ -2,7 +2,7 @@
 // eddie may 1st
 // william/peter may 2nd
 #include <MIDI.h>
-
+#include <Bounce.h>
 #include <FastLED.h>
 
 //multitask
@@ -34,6 +34,11 @@ int rawSlider1 = 0;
 int rawSlider2 = 0;
 int rawSlider3 = 0;
 int rawSlider4 = 0;
+float EMA_a = 0.5;      //initialization of EMA alpha
+int slider1Average = 0;          //initialization of EMA S
+int slider2Average = 0;          //initialization of EMA S
+int slider3Average = 0;          //initialization of EMA S
+int slider4Average = 0;          //initialization of EMA S
 
 int rawEnvelopeSlide1 = 0;
 int rawEnvelopeSlide2 = 0;
@@ -50,20 +55,27 @@ int rawEnvelopeSlide2 = 0;
 #define button8 8 //toggle 1-shot right vertical
 
 //button variables
-bool rawButton1 = false;
-bool rawButton2 = false;
-bool rawButton3 = false;
-bool rawButton4 = false;
+//
+//
+//bool rawButton1 = false;
+//bool rawButton2 = false;
+//bool rawButton3 = false;
+//bool rawButton4 = false;
 
 bool rawButton5 = false;
 bool rawButton6 = false;
 bool rawButton7 = false;
 bool rawButton8 = false;
 
-bool circleButton1 = false;
-bool circleButton2 = false;
-bool circleButton3 = false;
-bool circleButton4 = false;
+Bounce rawButton1 = Bounce(button1, 10);  // 10 ms debounce
+Bounce rawButton2 = Bounce(button2, 10);  // 10 ms debounce
+Bounce rawButton3 = Bounce(button3, 10);  // 10 ms debounce
+Bounce rawButton4 = Bounce(button4, 10);  // 10 ms debounce
+
+bool circleButton1 = true;
+bool circleButton2 = true;
+bool circleButton3 = true;
+bool circleButton4 = true;
 
 //LED OUTPUTS
 #define LED_PIN1     24
@@ -87,7 +99,10 @@ const int channel = 1;
 int noteVals[notes];
 
 
-int temp1 = 0;
+int env1 = 0;
+int env2 = 0;
+int env3 = 0;
+int env4 = 0;
 
 //Global variables
 void setup() {
@@ -114,11 +129,6 @@ void setup() {
   pinMode(button7, INPUT_PULLUP);
   pinMode(button8, INPUT_PULLUP);
 
-  rawButton1 = digitalRead(button1);
-  rawButton2 = digitalRead(button2);
-  rawButton3 = digitalRead(button3);
-  rawButton4 = digitalRead(button4);
-
   rawButton5 = digitalRead(button5);
   rawButton6 = digitalRead(button6);
   rawButton7 = digitalRead(button7);
@@ -129,7 +139,7 @@ void setup() {
   FastLED.addLeds<WS2812, LED_PIN1, GRB>(leds1, NUM_LEDS);  // GRB ordering is typical
   FastLED.addLeds<WS2812, LED_PIN2, GRB>(leds2, NUM_LEDS);  // GRB ordering is typical
   FastLED.addLeds<WS2812, LED_PIN3, GRB>(leds3, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<WS2812, LED_PIN4, GRB>(leds4, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<SK6812, LED_PIN4, GRB>(leds4, NUM_LEDS);  // GRB ordering is typical
 
   //MIDI setup
   MIDI.begin();
@@ -150,6 +160,12 @@ void loop() {
     rawSlider4 = analogRead(slider4);
     rawEnvelopeSlide1 = analogRead(envelopeSlide1);
     rawEnvelopeSlide2 = analogRead(envelopeSlide2);
+
+    slider1Average = (EMA_a * rawSlider1) + ((1 - EMA_a) * slider1Average); //run the EMA
+    slider2Average = (EMA_a * rawSlider2) + ((1 - EMA_a) * slider2Average); //run the EMA
+    slider3Average = (EMA_a * rawSlider3) + ((1 - EMA_a) * slider3Average); //run the EMA
+    slider4Average = (EMA_a * rawSlider4) + ((1 - EMA_a) * slider4Average); //run the EMA
+
 
 #ifdef DEBUG
     //Debug Raw print statements
@@ -178,38 +194,44 @@ void loop() {
 #ifdef DEBUG
     Serial.println("Updating Button states");
 #endif
-    rawButton1 = digitalRead(button1);
-    rawButton2 = digitalRead(button2);
-    rawButton3 = digitalRead(button3);
-    rawButton4 = digitalRead(button4);
+
+    if (rawButton1.update()) {
+      if (rawButton1.fallingEdge()) {
+        circleButton1 = !circleButton1;
+      }
+    }
+    if (rawButton2.update()) {
+      if (rawButton2.fallingEdge()) {
+        circleButton2 = !circleButton2;
+      }
+    }
+    if (rawButton3.update()) {
+      if (rawButton3.fallingEdge()) {
+        circleButton3 = !circleButton3;
+      }
+    }
+    if (rawButton4.update()) {
+      if (rawButton4.fallingEdge()) {
+        circleButton4 = !circleButton4;
+      }
+    }
+
     rawButton5 = digitalRead(button5);
     rawButton6 = digitalRead(button6);
     rawButton7 = digitalRead(button7);
     rawButton8 = digitalRead(button8);
 
-    if (rawButton1 == 0) {
-      circleButton1 = !circleButton1;
-    }
-    if (rawButton2 == 0) {
-      circleButton2 = !circleButton2;
-    }
-    if (rawButton3 == 0) {
-      circleButton3 = !circleButton3;
-    }
-    if (rawButton4 == 0) {
-      circleButton4 = !circleButton4;
-    }
 
 #ifdef DEBUG
     //    Debug Raw print statements
-    Serial.print("RAW button 1: ");
-    Serial.print(rawButton1);
-    Serial.print("\t RAW button 2: ");
-    Serial.print(rawButton2);
-    Serial.print("\t RAW button 3: ");
-    Serial.print(rawButton3);
-    Serial.print("\t RAW button 4: ");
-    Serial.print(rawButton4);
+    Serial.print("RAW button 1 toggle: ");
+    Serial.print(circleButton1);
+    Serial.print("\t RAW button 2 toggle: ");
+    Serial.print(circleButton2);
+    Serial.print("\t RAW button 3 toggle: ");
+    Serial.print(circleButton3);
+    Serial.print("\t RAW button 4 toggle: ");
+    Serial.print(circleButton4);
     Serial.print("\t RAW button 5: ");
     Serial.print(rawButton5);
     Serial.print("\t RAW button 6: ");
@@ -218,9 +240,6 @@ void loop() {
     Serial.print(rawButton7);
     Serial.print("\t RAW button 8: ");
     Serial.println(rawButton8);
-
-    Serial.print("circle button 3: ");
-    Serial.println(circleButton3);
 #endif
     //impliment button logic below
 
@@ -230,33 +249,81 @@ void loop() {
       MIDI.sendPitchBend(-8000, 1);
     }
 
-    if (rawButton6 == 0) {
-      MIDI.sendControlChange(1, 127, 1);
+    if (circleButton1 == 0 || rawButton5 == 0 ) {
+      if (env1 < 120) {
+        env1 = env1 + 10;
+      } else {
+        env1 = 127;
+      }
+      MIDI.sendPitchBend(int(NewMap(env1, 0, 127, -8000, 8000)), 1);
     } else {
-      MIDI.sendControlChange(1, 0, 1);
+      if (env1 > 10) {
+        env1 = env1 - 10;
+      } else {
+        env1 = 0;
+      }
+      MIDI.sendPitchBend(int(NewMap(env1, 0, 127, -8000, 8000)), 1);
+    }
+
+    if (circleButton2 == 0 || rawButton6 == 0 ) {
+      if (env2 < 120) {
+        env2 = env2 + 10;
+      } else {
+        env2 = 127;
+      }
+      MIDI.sendControlChange(1, env2, 1);
+    } else {
+      if (env2 > 10) {
+        env2 = env2 - 10;
+      } else {
+        env2 = 0;
+      }
+      MIDI.sendControlChange(1, env2, 1);
     }
 
     if (circleButton3 == 0 || rawButton7 == 0 ) {
-      if (temp1 < 120) {
-        temp1 = temp1 + 10;
+      if (env3 < 120) {
+        env3 = env3 + 10;
       } else {
-        temp1 = 127;
+        env3 = 127;
       }
-      MIDI.sendControlChange(71, temp1, 1);
+      MIDI.sendControlChange(71, env3, 1);
     } else {
-      if (temp1 > 10) {
-        temp1 = temp1 - 10;
+      if (env3 > 10) {
+        env3 = env3 - 10;
       } else {
-        temp1 = 0;
+        env3 = 0;
       }
-      MIDI.sendControlChange(71, temp1, 1);
+      MIDI.sendControlChange(71, env3, 1);
     }
 
-    if (rawButton8 == 0) {
-      MIDI.sendControlChange(74, 127, 1);
+
+    if (circleButton4 == 0 || rawButton8 == 0 ) {
+      if (env4 < 120) {
+        env4 = env4 + 10;
+      } else {
+        env4 = 127;
+      }
+      MIDI.sendControlChange(74, env4, 1);
     } else {
-      MIDI.sendControlChange(74, 0, 1);
+      if (env4 > 10) {
+        env4 = env4 - 10;
+      } else {
+        env4 = 0;
+      }
+      MIDI.sendControlChange(74, env4, 1);
     }
+
+    //    if (rawButton6 == 0) {
+    //      MIDI.sendControlChange(1, 127, 1);
+    //    } else {
+    //      MIDI.sendControlChange(1, 0, 1);
+    //    }
+    //    if (rawButton8 == 0) {
+    //      MIDI.sendControlChange(74, 127, 1);
+    //    } else {
+    //      MIDI.sendControlChange(74, 0, 1);
+    //    }
 
   }
   //update LEDs
@@ -264,24 +331,23 @@ void loop() {
     previousTimeLEDS = currentTime;
     Serial.println("Updating LED state");
     for (int i = 0; i < NUM_LEDS; i++) {
-      leds1[i] = CHSV(mappedSliderLED(rawSlider1, 428, 1018), 255, 255);
-      leds2[i] = CHSV(mappedSliderLED(rawSlider2, 34, 599), 255, 255);
-      leds3[i] = CHSV(mappedSliderLED(rawSlider3, 420, 956), temp1 * 2, 255);
-      leds4[i] = CHSV(mappedSliderLED(rawSlider4, 67, 615), 255, 255);
+
+      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), env1 * 2, 255);
+      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), env2 * 2, 255);
+      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), env3 * 2, 255);
+      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), env4 * 2, 255);
+      //      leds4[i] = CRGB( 0, 255, 255);
     }
     FastLED.show();
   }
-
   //update MIDI
   if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
     previousTimeMIDI = currentTime;
-
     Serial.println("Updating MIDI");
-
-    noteVals[0] = mappedSliderMIDI(rawSlider1, 428, 1018);
-    noteVals[1] = mappedSliderMIDI(rawSlider2, 34, 599);
-    noteVals[2] = mappedSliderMIDI(rawSlider3, 420, 956);
-    noteVals[3] = mappedSliderMIDI(rawSlider4, 67, 615);
+    noteVals[0] = mappedSliderMIDI(slider1Average, 428, 1018);
+    noteVals[1] = mappedSliderMIDI(slider2Average, 34, 599);
+    noteVals[2] = mappedSliderMIDI(slider3Average, 420, 956);
+    noteVals[3] = mappedSliderMIDI(slider4Average, 67, 615);
     Serial.print("Voice 1 NOTE: ");
     Serial.println(noteVals[0]);
     MIDI.sendNoteOn(noteVals[0], 100, 1);
@@ -301,4 +367,54 @@ int mappedSliderLED(int val, int minVal, int maxVal) {
 int mappedSliderMIDI(int val, int minVal, int maxVal) {
   int mappedVal = constrain(map(val, minVal, maxVal, 0, 127), 0, 127);
   return mappedVal;
+}
+
+#define MAXLONG 2147483647
+
+long NewMap(long val, long in_min, long in_max, long out_min, long out_max)
+{
+  // TEST: in_min must be lower than in_max => flip the ranges
+  // must be done before out of range test
+  if (in_min > in_max) return NewMap(val, in_max, in_min, out_max, out_min);
+
+  // TEST: if input value out of range it is mapped to border values. By choice.
+  if (val <= in_min) return out_min;
+  if (val >= in_max) return out_max;
+
+  // TEST: special range cases
+  if (out_min == out_max) return out_min;
+  if (in_min == in_max) return out_min / 2 + out_max / 2; // out_min or out_max? better
+
+  // test if there will be an overflow with well known (unbalanced) formula
+  if (( (MAXLONG / abs(out_max - out_min)) < (val - in_min) )  // multiplication overflow test
+      || ((MAXLONG - in_max) < -in_min ))                        // division overflow test
+  {
+    // if overflow would occur that means the ranges are too big
+    // To solve this we divide both the input & output range in two
+    // alternative is to throw an error.
+    // Serial.print(" >> "); // just to see the dividing
+    long mid = in_min / 2 + in_max / 2;
+    long Tmid = out_min / 2 + out_max / 2;
+    if (val > mid)
+    {
+      // map with upper half of original range
+      return NewMap(val, mid, in_max, Tmid, out_max);
+    }
+    // map with lower half of original range
+    return NewMap(val, in_min, mid, out_min, Tmid);
+  }
+
+  // finally we have a range that can be calculated
+  // unbalanced
+  // return out_min + ((out_max - out_min) * (val - in_min)) / (in_max - in_min);
+
+  // or balanced
+  // return BalancedMap(val, in_min, in_max, out_min, out_max);
+  unsigned long niv = in_max - in_min + 1;          // number input valuer
+  unsigned long nov = abs(out_max - out_min) + 1;   // number output values
+  unsigned long pos = val - in_min + 1;             // position of val
+
+  unsigned long newpos = ((pos * nov) + niv - 1) / niv; // new position with rounding
+  if (out_min < out_max) return out_min + newpos - 1;
+  return out_min - newpos + 1;
 }
