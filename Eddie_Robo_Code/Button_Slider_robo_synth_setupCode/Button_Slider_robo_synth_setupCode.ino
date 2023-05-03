@@ -82,10 +82,7 @@ const int channel = 1;
 int noteVals[notes];
 
 
-bool envelope1Start = false;
-bool envelope2Start = false;
-bool envelope3Start = false;
-bool envelope4Start = false;
+int temp1 = 0;
 
 //Global variables
 void setup() {
@@ -207,27 +204,37 @@ void loop() {
     //impliment button logic below
 
     if (rawButton5 == 0) {
-      MIDI.sendPitchBend(8000,1);
-    } else if (rawButton6 == 1) {
-      MIDI.sendPitchBend(-8000,1);
+      MIDI.sendPitchBend(8000, 1);
+    } else {
+      MIDI.sendPitchBend(-8000, 1);
     }
 
     if (rawButton6 == 0) {
-      MIDI.sendControlChange(1,127,1);
-    } else if (rawButton6 == 1) {
-      MIDI.sendControlChange(1,0,1);
+      MIDI.sendControlChange(1, 127, 1);
+    } else {
+      MIDI.sendControlChange(1, 0, 1);
     }
 
     if (rawButton7 == 0) {
-      MIDI.sendControlChange(71,127,1);
-    } else if (rawButton6 == 1) {
-      MIDI.sendControlChange(71,0,1);
+      if (temp1 < 120) {
+        temp1 = temp1 + 10;
+      } else {
+        temp1 = 127;
+      }
+      MIDI.sendControlChange(71, temp1, 1);
+    } else {
+      if (temp1 > 10) {
+        temp1 = temp1 - 10;
+      } else {
+        temp1 = 0;
+      }
+      MIDI.sendControlChange(71, temp1, 1);
     }
 
     if (rawButton8 == 0) {
-      MIDI.sendControlChange(74,127,1);
-    } else if (rawButton6 == 1) {
-      MIDI.sendControlChange(74,0,1);
+      MIDI.sendControlChange(74, 127, 1);
+    } else {
+      MIDI.sendControlChange(74, 0, 1);
     }
 
   }
@@ -238,7 +245,7 @@ void loop() {
     for (int i = 0; i < NUM_LEDS; i++) {
       leds1[i] = CHSV(mappedSliderLED(rawSlider1, 428, 1018), 255, 255);
       leds2[i] = CHSV(mappedSliderLED(rawSlider2, 34, 599), 255, 255);
-      leds3[i] = CHSV(mappedSliderLED(rawSlider3, 420, 956), 255, 255);
+      leds3[i] = CHSV(mappedSliderLED(rawSlider3, 420, 956), temp1*2, 255);
       leds4[i] = CHSV(mappedSliderLED(rawSlider4, 67, 615), 255, 255);
     }
     FastLED.show();
