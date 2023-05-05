@@ -19,7 +19,11 @@ long timeIntervalLEDs = 50;
 unsigned long previousTimeMIDI = millis();
 long timeIntervalMIDI = 100;
 
-#define DEBUG //comment out when done debugging
+//comment out when done debugging
+#define DEBUGADC
+//#define DEBUGBUTTON
+//#define DEBUGLED
+//#define DEBUGMIDI
 
 //Analog defines
 #define slider1 A0 //left vertical
@@ -27,8 +31,9 @@ long timeIntervalMIDI = 100;
 #define slider3 A2 // right horizontal
 #define slider4 A3 //right vertical
 
-#define envelopeSlide1 A6 //attack
-#define envelopeSlide2 A7 //decay
+#define attackknob1 A8
+#define decayknob2 A9
+
 
 int rawSlider1 = 0;
 int rawSlider2 = 0;
@@ -40,8 +45,8 @@ int slider2Average = 0;          //initialization of EMA S
 int slider3Average = 0;          //initialization of EMA S
 int slider4Average = 0;          //initialization of EMA S
 
-int rawEnvelopeSlide1 = 0;
-int rawEnvelopeSlide2 = 0;
+int rawKnob1 = 0;
+int rawKnob2 = 0;
 
 //button digitalin defines
 #define button1 9 //toggle left vertical 
@@ -114,8 +119,8 @@ void setup() {
   rawSlider3 = analogRead(slider3);
   rawSlider4 = analogRead(slider4);
 
-  rawEnvelopeSlide1 = analogRead(envelopeSlide1);
-  rawEnvelopeSlide2 = analogRead(envelopeSlide2);
+  rawKnob1 = analogRead(attackknob1);
+  rawKnob2 = analogRead(decayknob2);
 
   //button setup
   //toggle
@@ -136,10 +141,10 @@ void setup() {
 
 
   //LED setup
-  FastLED.addLeds<1,WS2812, LED_PIN1, GRB>(leds1, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<1,WS2812, LED_PIN2, GRB>(leds2, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<1,WS2812, LED_PIN3, GRB>(leds3, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<1,WS2812, LED_PIN4, GRB>(leds4, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<1, WS2812, LED_PIN1, GRB>(leds1, NUM_LEDS); // GRB ordering is typical
+  FastLED.addLeds<1, WS2812, LED_PIN2, GRB>(leds2, NUM_LEDS); // GRB ordering is typical
+  FastLED.addLeds<1, WS2812, LED_PIN3, GRB>(leds3, NUM_LEDS); // GRB ordering is typical
+  FastLED.addLeds<1, WS2812, LED_PIN4, GRB>(leds4, NUM_LEDS); // GRB ordering is typical
 
   //MIDI setup
   MIDI.begin();
@@ -151,23 +156,25 @@ void loop() {
   //update ADCs
   if (currentTime - previousTimeADC > timeIntervalADC) {
     previousTimeADC = currentTime;
-#ifdef DEBUG
+#ifdef DEBUGADC
     Serial.println("Updating ADC values");
+    Serial.println();
 #endif
     rawSlider1 = analogRead(slider1);
     rawSlider2 = analogRead(slider2);
     rawSlider3 = analogRead(slider3);
     rawSlider4 = analogRead(slider4);
-    rawEnvelopeSlide1 = analogRead(envelopeSlide1);
-    rawEnvelopeSlide2 = analogRead(envelopeSlide2);
 
     slider1Average = (EMA_a * rawSlider1) + ((1 - EMA_a) * slider1Average); //run the EMA
     slider2Average = (EMA_a * rawSlider2) + ((1 - EMA_a) * slider2Average); //run the EMA
     slider3Average = (EMA_a * rawSlider3) + ((1 - EMA_a) * slider3Average); //run the EMA
     slider4Average = (EMA_a * rawSlider4) + ((1 - EMA_a) * slider4Average); //run the EMA
 
+    rawKnob1 = analogRead(attackknob1);
+    rawKnob2 = analogRead(decayknob2);
 
-#ifdef DEBUG
+
+#ifdef DEBUGADC
     //Debug Raw print statements
     Serial.print("RAW slider 1: ");
     Serial.print(rawSlider1);
@@ -176,11 +183,14 @@ void loop() {
     Serial.print("\t RAW slider 3: ");
     Serial.print(rawSlider3);
     Serial.print("\t RAW slider 4: ");
-    Serial.print(rawSlider4);
-    Serial.print("\t RAW Envelope 1: ");
-    Serial.print(rawEnvelopeSlide1);
-    Serial.print("\t RAW Envelope 2: ");
-    Serial.println(rawEnvelopeSlide2);
+    Serial.println(rawSlider4);
+    Serial.println();
+    Serial.print("RAW Knob ATTACK 1: ");
+    Serial.print(rawKnob1);
+    Serial.print("\t RAW Knob DECAY 2: ");
+    Serial.println(rawKnob2);
+    Serial.println();
+
 
 #endif
 
@@ -191,7 +201,7 @@ void loop() {
   if (currentTime - previousTimeButtons > timeIntervalButtons) {
     previousTimeButtons = currentTime;
 
-#ifdef DEBUG
+#ifdef DEBUGBUTTON
     Serial.println("Updating Button states");
 #endif
 
@@ -222,7 +232,7 @@ void loop() {
     rawButton8 = digitalRead(button8);
 
 
-#ifdef DEBUG
+#ifdef DEBUGBUTTON
     //    Debug Raw print statements
     Serial.print("RAW button 1 toggle: ");
     Serial.print(circleButton1);
@@ -243,11 +253,11 @@ void loop() {
 #endif
     //impliment button logic below
 
-//    if (rawButton5 == 0) {
-//      MIDI.sendPitchBend(8000, 1);
-//    } else {
-//      MIDI.sendPitchBend(-8000, 1);
-//    }
+    //    if (rawButton5 == 0) {
+    //      MIDI.sendPitchBend(8000, 1);
+    //    } else {
+    //      MIDI.sendPitchBend(-8000, 1);
+    //    }
 
     if (circleButton1 == 0 || rawButton5 == 0 ) {
       if (env1 < 120) {
@@ -329,13 +339,15 @@ void loop() {
   //update LEDs
   if (currentTime - previousTimeLEDS > timeIntervalLEDs) {
     previousTimeLEDS = currentTime;
+#ifdef DEBUGLED
     Serial.println("Updating LED state");
+#endif
     for (int i = 0; i < NUM_LEDS; i++) {
 
-      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), 255, env1*2);
-      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), 255, env2*2);
-      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), 255, env3*2);
-      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4*2);
+      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), 255, env1 * 2);
+      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), 255, env2 * 2);
+      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), 255, env3 * 2);
+      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4 * 2);
       //      leds4[i] = CRGB( 0, 255, 255);
     }
     FastLED.show();
@@ -343,13 +355,17 @@ void loop() {
   //update MIDI
   if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
     previousTimeMIDI = currentTime;
+#ifdef DEBUGMIDI
     Serial.println("Updating MIDI");
+#endif
     noteVals[0] = mappedSliderMIDI(slider1Average, 428, 1018);
     noteVals[1] = mappedSliderMIDI(slider2Average, 34, 599);
     noteVals[2] = mappedSliderMIDI(slider3Average, 420, 956);
     noteVals[3] = mappedSliderMIDI(slider4Average, 67, 615);
+#ifdef DEBUGMIDI
     Serial.print("Voice 1 NOTE: ");
     Serial.println(noteVals[0]);
+#endif
     MIDI.sendNoteOn(noteVals[0], 100, 1);
     MIDI.sendNoteOn(noteVals[1], 100, 2);
     MIDI.sendNoteOn(noteVals[2], 100, 3);
