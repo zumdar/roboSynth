@@ -8,7 +8,7 @@
 //multitask
 //Task 1 - ADC
 unsigned long previousTimeADC = millis();
-long timeIntervalADC = 100;
+long timeIntervalADC = 50;
 //Task 2 - Buttons
 unsigned long previousTimeButtons = millis();
 long timeIntervalButtons = 100;
@@ -34,7 +34,7 @@ int rawSlider1 = 0;
 int rawSlider2 = 0;
 int rawSlider3 = 0;
 int rawSlider4 = 0;
-float EMA_a = 0.5;      //initialization of EMA alpha
+float EMA_a = 0.2;      //initialization of EMA alpha
 int slider1Average = 0;          //initialization of EMA S
 int slider2Average = 0;          //initialization of EMA S
 int slider3Average = 0;          //initialization of EMA S
@@ -136,10 +136,10 @@ void setup() {
 
 
   //LED setup
-  FastLED.addLeds<WS2812, LED_PIN1, GRB>(leds1, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<WS2812, LED_PIN2, GRB>(leds2, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<WS2812, LED_PIN3, GRB>(leds3, NUM_LEDS);  // GRB ordering is typical
-  FastLED.addLeds<SK6812, LED_PIN4, GRB>(leds4, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<1,WS2812, LED_PIN1, GRB>(leds1, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<1,WS2812, LED_PIN2, GRB>(leds2, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<1,WS2812, LED_PIN3, GRB>(leds3, NUM_LEDS);  // GRB ordering is typical
+  FastLED.addLeds<1,WS2812, LED_PIN4, GRB>(leds4, NUM_LEDS);  // GRB ordering is typical
 
   //MIDI setup
   MIDI.begin();
@@ -332,10 +332,10 @@ void loop() {
     Serial.println("Updating LED state");
     for (int i = 0; i < NUM_LEDS; i++) {
 
-      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), env1 * 2, 255);
-      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), env2 * 2, 255);
-      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), env3 * 2, 255);
-      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), env4 * 2, 255);
+      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), 255, env1*2);
+      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), 255, env2*2);
+      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), 255, env3*2);
+      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4*2);
       //      leds4[i] = CRGB( 0, 255, 255);
     }
     FastLED.show();
