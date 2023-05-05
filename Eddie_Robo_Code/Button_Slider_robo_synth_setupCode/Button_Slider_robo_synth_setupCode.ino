@@ -267,7 +267,7 @@ void loop() {
       leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4 * 2);
       //      leds4[i] = CRGB( 0, 255, 255);
     }
-//    FastLED.show();
+    FastLED.show();
   }
   //update MIDI
   if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
