@@ -251,14 +251,40 @@ void loop() {
     Serial.print("\t RAW button 8: ");
     Serial.println(rawButton8);
 #endif
-    //impliment button logic below
 
-    //    if (rawButton5 == 0) {
-    //      MIDI.sendPitchBend(8000, 1);
-    //    } else {
-    //      MIDI.sendPitchBend(-8000, 1);
-    //    }
+  }
+  //update LEDs
+  if (currentTime - previousTimeLEDS > timeIntervalLEDs) {
+    previousTimeLEDS = currentTime;
+#ifdef DEBUGLED
+    Serial.println("Updating LED state");
+#endif
+    for (int i = 0; i < NUM_LEDS; i++) {
 
+      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), 255, env1 * 2);
+      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), 255, env2 * 2);
+      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), 255, env3 * 2);
+      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4 * 2);
+      //      leds4[i] = CRGB( 0, 255, 255);
+    }
+    FastLED.show();
+  }
+  //update MIDI
+  if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
+    previousTimeMIDI = currentTime;
+#ifdef DEBUGMIDI
+    Serial.println("Updating MIDI");
+#endif
+    noteVals[0] = mappedSliderMIDI(slider1Average, 428, 1018);
+    noteVals[1] = mappedSliderMIDI(slider2Average, 34, 599);
+    noteVals[2] = mappedSliderMIDI(slider3Average, 420, 956);
+    noteVals[3] = mappedSliderMIDI(slider4Average, 67, 615);
+#ifdef DEBUGMIDI
+    Serial.print("Voice 1 NOTE: ");
+    Serial.println(noteVals[0]);
+#endif
+
+    //volume envelopes
     if (circleButton1 == 0 || rawButton5 == 0 ) {
       if (env1 < 120) {
         env1 = env1 + 10;
@@ -324,48 +350,7 @@ void loop() {
       MIDI.sendControlChange(74, env4, 1);
     }
 
-    //    if (rawButton6 == 0) {
-    //      MIDI.sendControlChange(1, 127, 1);
-    //    } else {
-    //      MIDI.sendControlChange(1, 0, 1);
-    //    }
-    //    if (rawButton8 == 0) {
-    //      MIDI.sendControlChange(74, 127, 1);
-    //    } else {
-    //      MIDI.sendControlChange(74, 0, 1);
-    //    }
-
-  }
-  //update LEDs
-  if (currentTime - previousTimeLEDS > timeIntervalLEDs) {
-    previousTimeLEDS = currentTime;
-#ifdef DEBUGLED
-    Serial.println("Updating LED state");
-#endif
-    for (int i = 0; i < NUM_LEDS; i++) {
-
-      leds1[i] = CHSV(mappedSliderLED(slider1Average, 428, 1018), 255, env1 * 2);
-      leds2[i] = CHSV(mappedSliderLED(slider2Average, 34, 599), 255, env2 * 2);
-      leds3[i] = CHSV(mappedSliderLED(slider3Average, 420, 956), 255, env3 * 2);
-      leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4 * 2);
-      //      leds4[i] = CRGB( 0, 255, 255);
-    }
-    FastLED.show();
-  }
-  //update MIDI
-  if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
-    previousTimeMIDI = currentTime;
-#ifdef DEBUGMIDI
-    Serial.println("Updating MIDI");
-#endif
-    noteVals[0] = mappedSliderMIDI(slider1Average, 428, 1018);
-    noteVals[1] = mappedSliderMIDI(slider2Average, 34, 599);
-    noteVals[2] = mappedSliderMIDI(slider3Average, 420, 956);
-    noteVals[3] = mappedSliderMIDI(slider4Average, 67, 615);
-#ifdef DEBUGMIDI
-    Serial.print("Voice 1 NOTE: ");
-    Serial.println(noteVals[0]);
-#endif
+    // pitches
     MIDI.sendNoteOn(noteVals[0], 100, 1);
     MIDI.sendNoteOn(noteVals[1], 100, 2);
     MIDI.sendNoteOn(noteVals[2], 100, 3);
