@@ -45,8 +45,8 @@ int slider2Average = 0;          //initialization of EMA S
 int slider3Average = 0;          //initialization of EMA S
 int slider4Average = 0;          //initialization of EMA S
 
-int rawKnob1 = 0;
-int rawKnob2 = 0;
+int rawAttack = 0;
+int rawDecay = 0;
 
 //button digitalin defines
 #define button1 9 //toggle left vertical 
@@ -119,8 +119,8 @@ void setup() {
   rawSlider3 = analogRead(slider3);
   rawSlider4 = analogRead(slider4);
 
-  rawKnob1 = analogRead(attackknob1);
-  rawKnob2 = analogRead(decayknob2);
+  rawAttack = analogRead(attackknob1);
+  rawDecay = analogRead(decayknob2);
 
   //button setup
   //toggle
@@ -170,8 +170,8 @@ void loop() {
     slider3Average = (EMA_a * rawSlider3) + ((1 - EMA_a) * slider3Average); //run the EMA
     slider4Average = (EMA_a * rawSlider4) + ((1 - EMA_a) * slider4Average); //run the EMA
 
-    rawKnob1 = analogRead(attackknob1);
-    rawKnob2 = analogRead(decayknob2);
+    rawAttack = analogRead(attackknob1);
+    rawDecay = analogRead(decayknob2);
 
 
 #ifdef DEBUGADC
@@ -186,9 +186,9 @@ void loop() {
     Serial.println(rawSlider4);
     Serial.println();
     Serial.print("RAW Knob ATTACK 1: ");
-    Serial.print(rawKnob1);
+    Serial.print(rawAttack);
     Serial.print("\t RAW Knob DECAY 2: ");
-    Serial.println(rawKnob2);
+    Serial.println(rawDecay);
     Serial.println();
 
 
@@ -267,7 +267,7 @@ void loop() {
       leds4[i] = CHSV(mappedSliderLED(slider4Average, 67, 615), 255, env4 * 2);
       //      leds4[i] = CRGB( 0, 255, 255);
     }
-    FastLED.show();
+//    FastLED.show();
   }
   //update MIDI
   if (currentTime - previousTimeMIDI > timeIntervalMIDI) {
@@ -279,22 +279,21 @@ void loop() {
     noteVals[1] = mappedSliderMIDI(slider2Average, 34, 599);
     noteVals[2] = mappedSliderMIDI(slider3Average, 420, 956);
     noteVals[3] = mappedSliderMIDI(slider4Average, 67, 615);
-#ifdef DEBUGMIDI
-    Serial.print("Voice 1 NOTE: ");
-    Serial.println(noteVals[0]);
-#endif
-
+    
     //volume envelopes
+
+    int attack1 = NewMap(rawAttack, 0, 1023, 0, 40);
+    int decay1 = NewMap(rawDecay, 0, 1023, 0,40);
     if (circleButton1 == 0 || rawButton5 == 0 ) {
-      if (env1 < 120) {
-        env1 = env1 + 10;
+      if (env1 < 127-decay1) {
+        env1 = env1 + attack1;
       } else {
         env1 = 127;
       }
       MIDI.sendPitchBend(int(NewMap(env1, 0, 127, -8000, 8000)), 1);
     } else {
-      if (env1 > 10) {
-        env1 = env1 - 10;
+      if (env1 > attack1) {
+        env1 = env1 - decay1;
       } else {
         env1 = 0;
       }
@@ -355,6 +354,17 @@ void loop() {
     MIDI.sendNoteOn(noteVals[1], 100, 2);
     MIDI.sendNoteOn(noteVals[2], 100, 3);
     MIDI.sendNoteOn(noteVals[3], 100, 4);
+#ifdef DEBUGMIDI
+    Serial.println("MIDI");
+    Serial.print("Voice 1 NOTE: ");
+    Serial.println(noteVals[0]);
+    Serial.println();
+        Serial.print("Attack: ");
+    Serial.println(attack1);
+        Serial.print("Decay: ");
+    Serial.println(decay1);
+    Serial.println();
+#endif
 
   }
 }
