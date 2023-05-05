@@ -243,11 +243,11 @@ void loop() {
 #endif
     //impliment button logic below
 
-    if (rawButton5 == 0) {
-      MIDI.sendPitchBend(8000, 1);
-    } else {
-      MIDI.sendPitchBend(-8000, 1);
-    }
+//    if (rawButton5 == 0) {
+//      MIDI.sendPitchBend(8000, 1);
+//    } else {
+//      MIDI.sendPitchBend(-8000, 1);
+//    }
 
     if (circleButton1 == 0 || rawButton5 == 0 ) {
       if (env1 < 120) {
